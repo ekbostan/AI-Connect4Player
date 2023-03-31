@@ -1,13 +1,10 @@
 import random
-import sys
 import time
 import pygame
 import math
-import numpy as np
 from copy import deepcopy
+import numpy as np
 
-counter = 0
-first_move = True
 
 class connect4Player(object):
     def __init__(self, position, seed=0):
@@ -87,330 +84,180 @@ class stupidAI(connect4Player):
 
 
 class alphaBetaAI(connect4Player):
-
-    def play(self, env, move):
-        # Find legal moves
-        possible = env.topPosition >= 0
-        indices = []
-        for i, p in enumerate(possible):
-            if p: indices.append(i)
-        # Calculate the minimax value for each move
-        vs = np.zeros(7)
-        for i in indices:
-            env_copy = deepcopy(env)
-            self.simulateMove(env_copy, i, self.position)
-            vs[i] = self.minimax(env_copy, self.depth - 1, -np.inf, np.inf, False)
-        # Choose the move with the highest minimax value
-        move[:] = [np.argmax(vs)]
-
-    def minimax(self, env, depth, alpha, beta, maximizingPlayer):
-        switch = {1: 2, 2: 1}
-        if depth == 0 or env.gameOver(None, None):
-            return self.evaluate(env)
-        if maximizingPlayer:
-            value = -np.inf
-            possible = env.topPosition >= 0
-            indices = []
-            for i, p in enumerate(possible):
-                if p: indices.append(i)
-            for i in indices:
-                env_copy = deepcopy(env)
-                self.simulateMove(env_copy, i, self.position)
-                value = max(value, self.minimax(env_copy, depth - 1, alpha, beta, False))
-                alpha = max(alpha, value)
-                if beta <= alpha:
-                    break
-            return value
-        else:
-            value = np.inf
-            possible = env.topPosition >= 0
-            indices = []
-            for i, p in enumerate(possible):
-                if p: indices.append(i)
-            for i in indices:
-                env_copy = deepcopy(env)
-                self.simulateMove(env_copy, i, switch[self.position])
-                value = min(value, self.minimax(env_copy, depth - 1, alpha, beta, True))
-                beta = min(beta, value)
-                if beta <= alpha:
-                    break
-            return value
-
-    def evaluate(self, env):
-        switch = {1: 2, 2: 1}
-        if env.gameOver(None, None):
-            if env.winner == self.position:
-                return 100000000
-            elif env.winner == switch[self.position]:
-                return -100000000
-            else:
-                return 0
-        else:
-            score = 0
-            for i in range(env.rows):
-                for j in range(env.cols):
-                    if env.board[i][j] == self.position:
-                        # Check horizontally
-                        if j <= env.cols - 4:
-                            if env.board[i][j + 1] == self.position and env.board[i][j + 2] == self.position and \
-                                    env.board[i][j + 3] == self.position:
-                                score += 100
-                            elif env.board[i][j + 1] == self.position and env.board[i][j + 2] == self.position:
-                                score += 10
-                            elif env.board[i][j + 1] == self.position:
-                                score += 5
-                        # Check vertically
-                        if i <= env.rows - 4:
-                            if env.board[i + 1][j] == self.position and env.board[i + 2][j] == self.position and \
-                                    env.board[i + 3][j] == self.position:
-                                score += 100
-                            elif env.board[i + 1][j] == self.position and env.board[i + 2][j] == self.position:
-                                score += 10
-                            elif env.board[i + 1][j] == self.position:
-                                score += 5
-                        # Check diagonally (positive slope)
-                        if i <= env.rows - 4 and j <= env.cols - 4:
-                            if env.board[i + 1][j + 1] == self.position and env.board[i + 2][j + 2] == self.position and \
-                                    env.board[i + 3][j + 3] == self.position:
-                                score += 100
-                            elif env.board[i + 1][j + 1] == self.position and env.board[i + 2][j + 2] == self.position:
-                                score += 10
-                            elif env.board[i + 1][j + 1] == self.position:
-                                score += 5
-                        # Check diagonally (negative slope)
-                        if i >= 3 and j <= env.cols - 4:
-                            if env.board[i - 1][j + 1] == self.position and env.board[i - 2][j + 2] == self.position and \
-                                    env.board[i - 3][j + 3] == self.position:
-                                score += 100
-                            elif env.board[i - 1][j + 1] == self.position and env.board[i - 2][j + 2] == self.position:
-                                score += 10
-                            elif env.board[i - 1][j + 1] == self.position:
-                                score += 5
-                    elif env.board[i][j] == switch[self.position]:
-                        # Check horizontally
-                        if j <= env.cols - 4:
-                            if env.board[i][j + 1] == switch[self.position] and env.board[i][j + 2] == switch[
-                                self.position] and env.board[i][j + 3] == switch[self.position]:
-                                score -= 5
-                            elif env.board[i][j + 1] == switch[self.position] and env.board[i][j + 2] == switch[
-                                self.position]:
-                                score -= 4
-                            elif env.board[i][j + 1] == switch[self.position]:
-                                score -= 2
-                        # Check vertically
-                        if i <= env.rows - 4:
-                            if env.board[i + 1][j] == self.position and env.board[i + 2][j] == self.position and \
-                                    env.board[i + 3][j] == self.position:
-                                score -= 5
-                            elif env.board[i + 1][j] == self.position and env.board[i + 2][j] == self.position:
-                                score -= 4
-                            elif env.board[i + 1][j] == self.position:
-                                score -= 2
-                        # Check diagonally (positive slope)
-                        if i <= env.rows - 4 and j <= env.cols - 4:
-                            if env.board[i + 1][j + 1] == self.position and env.board[i + 2][j + 2] == self.position and \
-                                    env.board[i + 3][j + 3] == self.position:
-                                score -= 5
-                            elif env.board[i + 1][j + 1] == self.position and env.board[i + 2][j + 2] == self.position:
-                                score -= 4
-                            elif env.board[i + 1][j + 1] == self.position:
-                                score -= 2
-                        # Check diagonally (negative slope)
-                        if i >= 3 and j <= env.cols - 4:
-                            if env.board[i - 1][j + 1] == self.position and env.board[i - 2][j + 2] == self.position and \
-                                    env.board[i - 3][j + 3] == self.position:
-                                score -= 5
-                            elif env.board[i - 1][j + 1] == self.position and env.board[i - 2][j + 2] == self.position:
-                                score -= 4
-                            elif env.board[i - 1][j + 1] == self.position:
-                                score -= 2
-        return score
-
-    def simulateMove(self, env, move, player):
-        env.board[env.topPosition[move]][move] = player
-        env.topPosition[move] -= 1
-        env.history[0].append(move)
-
-
-class minimaxAI(connect4Player):
+    def __init__(self, position, depth=3):
+        super().__init__(position)
+        self.depth = 3
 
     def play(self, env, move):
         env_copy = deepcopy(env)
         possible = env.topPosition >= 0
         indices = []
+        v = -np.inf
+        alpha = -np.inf
+        beta = np.inf
+
         for i, p in enumerate(possible):
             if p: indices.append(i)
-        # Calculate the minimax value for each move
 
-        val = 0
-        index = 0
-        move[:] = [3]
         for i in indices:
+            env_copy = deepcopy(env)
             self.simulateMove(env_copy, self.position, i)
-            new_val = self.evaluate(env_copy)
-            #ove[:] = [3]
-            if new_val > val:
-                val = new_val
-                index = i
-                move[:] = [index]
-    #         if new_val > val:
-    #             move[:] =[i]
-    #             val = new_val
-    #     # Choose the move with the highest minimax value
-    #
-    # def minimax(self, env, depth, first_move, maximizingplayer):
-    #     switch = {1: 2, 2: 1}
-    #     move = first_move
-    #     player = self.position
-    #     opp = self.position.opponent
-    #
-    #     self.simulateMove(env, move, player)
-    #     if depth == 0 or env.gameOver(move, player) or env.gameOver(move, opp):
-    #         if env.gameOver(move, player) or env.gameOver(move, opp):
-    #             if env.gameover(move, player):
-    #                 return 10000000000000
-    #             elif env.gameover(move, opp):
-    #                 return -10000000000000
-    #             else:
-    #                 return 0
-    #         else:
-    #             return self.evaluate(env)
-    #     if maximizingplayer:
-    #         value = -np.inf
-    #         possible = env.topPosition >= 0
-    #         indices = []
-    #         for i, p in enumerate(possible):
-    #             if p: indices.append(i)
-    #         for i in indices:
-    #
-    #             self.simulateMove(env, i, self.position)
-    #             value = max(value, self.minimax(env, depth - 1,i, False))
-    #         return value
-    #
-    #     else:
-    #         value = np.inf
-    #         possible = env.topPosition >= 0
-    #         indices = []
-    #         for i, p in enumerate(possible):
-    #             if p: indices.append(i)
-    #         for i in indices:
-    #
-    #             self.simulateMove(env, i, switch[self.position])
-    #             value = min(value, self.minimax(env, depth - 1,i,True))
-    #         return value
+            score = self.minimax(env_copy, i, self.depth - 1, False, alpha, beta)
 
-    # def evaluate(self, env):
-    #     switch = {1: 2, 2: 1}
-    #     score = 0
-    #     for i in range(ROW_COUNT):
-    #         if env.board[3][i] == self.position:
-    #             score += 3
-    #         elif env.board[3][i] == switch[self.position]:
-    #             score -= 3
-    #     for i in range(ROW_COUNT):
-    #         for j in range(COLUMN_COUNT):
-    #             if env.board[i][j] == self.position:
-    #                 # Check horizontally
-    #                 if j <= COLUMN_COUNT - 4:
-    #                     if env.board[i][j + 1] == self.position and env.board[i][j + 2] == self.position and \
-    #                             env.board[i][j + 3] == self.position:
-    #                         score += 100
-    #                     elif env.board[i][j + 1] == self.position and env.board[i][j + 2] == self.position:
-    #                         score += 10
-    #                     elif env.board[i][j + 1] == self.position:
-    #                         score += 2
-    #                     # Check vertically
-    #                 if i <= ROW_COUNT - 3:
-    #                     if env.board[i + 1][j] == self.position and env.board[i + 2][j] == self.position and \
-    #                             env.board[i + 3][j] == self.position:
-    #                         score += 100
-    #                     elif env.board[i + 1][j] == self.position and env.board[i + 2][j] == self.position:
-    #                         score += 10
-    #                     elif env.board[i + 1][j] == self.position:
-    #                         score += 2
-    #                     # Check diagonally (positive slope)
-    #                 if i <= ROW_COUNT - 3 and j <= COLUMN_COUNT - 4:
-    #                     if env.board[i + 1][j + 1] == self.position and env.board[i + 2][j + 2] == self.position and \
-    #                             env.board[i + 3][j + 3] == self.position:
-    #                         score += 100
-    #                     elif env.board[i + 1][j + 1] == self.position and env.board[i + 2][j + 2] == self.position:
-    #                         score += 10
-    #                     elif env.board[i + 1][j + 1] == self.position:
-    #                         score += 2
-    #                 # Check diagonally (negative slope)
-    #                 if i >= 4 and j <= COLUMN_COUNT - 3:
-    #                     if env.board[i - 1][j + 1] == self.position and env.board[i - 2][j + 2] == self.position and \
-    #                             env.board[i - 3][j + 3] == self.position:
-    #                         score += 100
-    #                     elif env.board[i - 1][j + 1] == self.position and env.board[i - 2][j + 2] == self.position:
-    #                         score += 10
-    #                     elif env.board[i - 1][j + 1] == self.position:
-    #                         score += 2
-    #             elif env.board[i][j] == switch[self.position]:
-    #                 # Check horizontally
-    #                 if j <= COLUMN_COUNT - 4:
-    #                     if env.board[i][j + 1] == switch[self.position] and env.board[i][j + 2] == switch[
-    #                         self.position] and env.board[i][j + 3] == switch[self.position]:
-    #                         score -= 100
-    #                     elif env.board[i][j + 1] == switch[self.position] and env.board[i][j + 2] == switch[
-    #                         self.position]:
-    #                         score -= 10
-    #                     elif env.board[i][j + 1] == switch[self.position]:
-    #                         score -= 2
-    #                 # Check vertically
-    #                 if i <= ROW_COUNT - 3:
-    #                     if env.board[i + 1][j] == switch[self.position] and env.board[i + 2][j] == switch[
-    #                         self.position] and env.board[i + 3][j] == switch[self.position]:
-    #                         score -= 100
-    #                     elif env.board[i + 1][j] == switch[self.position] and env.board[i + 2][j] == switch[
-    #                         self.position]:
-    #                         score -= 10
-    #                     elif env.board[i + 1][j] == switch[self.position]:
-    #                         score -= 2
-    #                 # Check diagonally (positive slope)
-    #                 if i <= ROW_COUNT - 3 and j <= COLUMN_COUNT - 4:
-    #                     if env.board[i + 1][j + 1] == switch[self.position] and env.board[i + 2][j + 2] == switch[
-    #                         self.position] and env.board[i + 3][j + 3] == switch[self.position]:
-    #                         score -= 100
-    #                     elif env.board[i + 1][j + 1] == switch[self.position] and env.board[i + 2][j + 2] == switch[
-    #                         self.position]:
-    #                         score -= 10
-    #                     elif env.board[i + 1][j + 1] == switch[self.position]:
-    #                         score -= 2
-    #                 # Check diagonally (negative slope)
-    #                 if i >= 4 and j <= COLUMN_COUNT - 3:
-    #                     if env.board[i - 1][j + 1] == switch[self.position] and env.board[i - 2][j + 2] == switch[
-    #                         self.position] and env.board[i - 3][j + 3] == switch[self.position]:
-    #                         score -= 100
-    #                     elif env.board[i - 1][j + 1] == switch[self.position] and env.board[i - 2][j + 2] == switch[
-    #                         self.position]:
-    #                         score -= 10
-    #                     elif env.board[i - 1][j + 1] == switch[self.position]:
-    #                         score -= 2
-    #
-    #     return score
+            if score > v:
+                v = score
+                best_move = i
 
-    def simulateMove(self, env, player, move):
-        env.board[env.topPosition[move]][move] = player
-        env.topPosition[move] -= 1
+        move[:] = [best_move]
 
+    def minimax(self, env, move, depth, maximizing_player, alpha, beta):
+        if env.gameOver(move, self.position):
+            return np.inf
 
-    def evaluate(self,env):
-        w = [[3, 4, 5, 7, 5, 4, 3],
-             [4, 6, 8, 10, 8, 6, 4],
-             [5, 8, 11, 13, 11, 8, 5],
-             [5, 8, 11, 13, 11, 8, 5],
-             [4, 6, 8, 10, 8, 6, 4],
-             [3, 4, 5, 7, 5, 4, 3]]
+        if env.gameOver(move, self.opponent.position):
+            return -np.inf
+
+        if depth == 0:
+            return self.evaluate(env)
+
+        possible = env.topPosition >= 0
+        indices = []
+
+        for i, p in enumerate(possible):
+            if p: indices.append(i)
+
+        if maximizing_player:
+            best_score = -np.inf
+            for i in indices:
+                env_copy = deepcopy(env)
+                self.simulateMove(env_copy, self.position, i)
+                score = self.minimax(env_copy, i, depth - 1, False, alpha, beta)
+                best_score = max(best_score, score)
+                alpha = max(alpha, best_score)
+                if alpha >= beta:
+                    break
+
+            return best_score
+
+        else:
+            best_score = np.inf
+            for i in indices:
+                env_copy = deepcopy(env)
+                self.simulateMove(env_copy, self.opponent.position, i)
+                score = self.minimax(env_copy, i, depth - 1, True, alpha, beta)
+                best_score = min(best_score, score)
+                beta = min(beta, best_score)
+                if alpha >= beta:
+                    break
+            return best_score
+
+    def evaluate(self, env):
+
+        w = [[6, 8, 10, 18, 10, 8, 6],
+             [8, 12, 16, 20, 16, 12, 8],
+             [10, 16, 22, 26, 22, 16, 10],
+             [10, 16, 22, 26, 22, 16, 10],
+             [8, 12, 16, 20, 16, 12, 8],
+             [6, 8, 10, 18, 10, 8, 6]]
 
         score = 0
+
         for i in range(6):
             for j in range(7):
                 if env.board[i][j] == self.position:
                     score += w[i][j]
                 elif env.board[i][j] == self.opponent.position:
                     score -= w[i][j]
+
         return score
+
+    def simulateMove(self, env, player, move):
+        env.board[env.topPosition[move]][move] = player
+        env.topPosition[move] -= 1
+
+
+class minimaxAI(connect4Player):
+    def __init__(self, position, depth=3):
+        super().__init__(position)
+        self.depth = 3
+
+    def play(self, env, move):
+        env_copy = deepcopy(env)
+        possible = env.topPosition >= 0
+        indices = []
+        v = -np.inf
+
+        for i, p in enumerate(possible):
+            if p: indices.append(i)
+
+        for i in indices:
+            env_copy = deepcopy(env)
+            self.simulateMove(env_copy, self.position, i)
+            score = self.minimax(env_copy, i, self.depth - 1, False)
+
+            if score > v:
+                v = score
+                best_move = i
+
+        move[:] = [best_move]
+
+    def minimax(self, env, move, depth, maximizing_player):
+        if env.gameOver(move, self.position):
+            return np.inf
+
+        if env.gameOver(move, self.opponent.position):
+            return -np.inf
+
+        if depth == 0:
+            return self.evaluate(env)
+
+        possible = env.topPosition >= 0
+        indices = []
+
+        for i, p in enumerate(possible):
+            if p: indices.append(i)
+
+        if maximizing_player:
+            best_score = -np.inf
+            for i in indices:
+                env_copy = deepcopy(env)
+                self.simulateMove(env_copy, self.position, i)
+                score = self.minimax(env_copy, i, depth - 1, False)
+                best_score = max(best_score, score)
+            return best_score
+
+        else:
+            best_score = np.inf
+            for i in indices:
+                env_copy = deepcopy(env)
+                self.simulateMove(env_copy, self.opponent.position, i)
+                score = self.minimax(env_copy, i, depth - 1, True)
+                best_score = min(best_score, score)
+            return best_score
+
+    def evaluate(self, env):
+
+        w = [[6, 8, 10, 18, 10, 8, 6],
+             [8, 12, 16, 20, 16, 12, 8],
+             [10, 16, 22, 26, 22, 16, 10],
+             [10, 16, 22, 26, 22, 16, 10],
+             [8, 12, 16, 20, 16, 12, 8],
+             [6, 8, 10, 18, 10, 8, 6]]
+
+        score = 0
+
+        for i in range(6):
+            for j in range(7):
+                if env.board[i][j] == self.position:
+                    score += w[i][j]
+                elif env.board[i][j] == self.opponent.position:
+                    score -= w[i][j]
+
+        return score
+
+    def simulateMove(self, env, player, move):
+        env.board[env.topPosition[move]][move] = player
+        env.topPosition[move] -= 1
 
 
 SQUARESIZE = 100
@@ -434,11 +281,3 @@ size = (width, height)
 RADIUS = int(SQUARESIZE / 2 - 5)
 
 screen = pygame.display.set_mode(size)
-
-# /risk->7
-# /hardworking->10
-# /perfectionist->10
-# /experienced->10
-# /charismatic->8
-# My dad  fits perfectly I would rate 10
-# Im confident that we can start a company tomorrow so I would myself 10
