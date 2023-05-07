@@ -1,6 +1,8 @@
 # Description for AI player to play Connect 4 :
 
 This is an AI player built using the minimax algorithm with alpha-beta pruning to play the classic game of Connect 4. The player is written in Python and uses a simple heuristic function to evaluate the strength of potential moves.
+<img width="382" alt="Screenshot 2023-05-06 at 7 44 38 PM" src="https://user-images.githubusercontent.com/114015851/236654967-8ef0308e-5477-47bb-84fc-d35af35769fc.png">
+
 
 The minimax algorithm is a widely-used algorithm in artificial intelligence for decision-making in two-player games. It works by recursively exploring all possible moves from the current state of the game, and assigning a score to each possible outcome. The player then chooses the move that maximizes its chances of winning, assuming that the opponent will make the move that minimizes its chances of winning.
 
